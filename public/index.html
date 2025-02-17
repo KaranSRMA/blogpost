@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Page</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Blog Posts</h1>
+        <div id="blog-list" class="blog-list"></div> <!-- Placeholder for the blog posts -->
+    </div>
+
+    <script>
+        // Fetch blog data from the server
+        async function fetchBlogs() {
+            try {
+                const response = await fetch('/blogs');  // Fetch the blogs
+                const data = await response.json();  // Parse the response as JSON
+
+                const blogListContainer = document.getElementById('blog-list');
+                blogListContainer.innerHTML = '';  // Clear any previous content
+
+                // Loop through the fetched blogs and render them
+                data.forEach(blog => {
+                    // console.log(data)
+                    const blogElement = document.createElement('div');
+                    blogElement.classList.add('blog-item');
+
+                    blogElement.innerHTML = `
+                <a href="/full-blogs/${blog.documentId}" class="read-more">
+                    <div class="blog-card">
+                        <div class="thumbnail">
+                            <img src="${blog.image}" alt="blog image">
+                        </div>
+                        <h2>${blog.title}</h2>
+                        <p class="author">${blog.author}</p>
+                    </div>
+                </a>
+            `;
+
+                    blogListContainer.appendChild(blogElement);
+                });
+            } catch (error) {
+                console.error('Error fetching blogs:', error);
+            }
+        }
+
+        // Call the function to fetch blogs
+        fetchBlogs();
+
+
+    </script>
+
+
+
+</body>
+
+</html>
