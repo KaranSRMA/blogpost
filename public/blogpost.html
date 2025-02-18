@@ -36,6 +36,7 @@
                     // Assuming 'title', 'author', and 'content' are part of the blog data
                     const blogContent = document.getElementById("blog-content");
                     blogContent.innerHTML = `<h2>${data.title}</h2><p>${data.author}</p><hr><p>${data.content}</p>`;
+                    document.title = `${data.title} | Blog Post`
 
                 } catch (error) {
                     console.error('Error fetching blog:', error);
