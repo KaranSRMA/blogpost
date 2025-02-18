@@ -18,8 +18,6 @@ app.get("/", (req, res) => {
 app.get("/blogs", async (req, res) => {
     try {
         const response = await axios.get(`${process.env.FETCH_BLOGS_IMAGE}`);
-        // console.log(response.data.data[2].image.url)
-        // Optionally, you can format the data here before sending it to the frontend
         const blogs = response.data.data.map(blog => ({
             title: blog.title,
             image: blog.image.url,
@@ -27,36 +25,28 @@ app.get("/blogs", async (req, res) => {
             author: blog.author
         }));
 
-        res.json(blogs);  // Send the formatted data to the frontend
+        res.json(blogs);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching blogs' });
     }
 });
 
-// full blogpost route 
 app.get("/full-blogs/:documentId", async (req, res) => {
     const blogId = req.params.documentId;
     res.redirect(`/blogpost?documentId=${blogId}`);
 });
 
-
 app.get('/blogpost', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'blogpost.html'))
-})
+    res.sendFile(path.join(__dirname, 'public', 'blogpost.html'));
+});
 
 app.get("/fullblogpost/:documentId", async (req, res) => {
     const blogId = req.params.documentId;
     try {
         const response = await axios.get(`${process.env.FETCH_BLOGS}/${blogId}`);
-        const blog = response.data.data; // Assuming the response structure contains the blog data
-
-        // Parsing the rich text content into HTML format
+        const blog = response.data.data;
         const parsedContent = parseRichTextToHTML(blog.content);
-
-        // Add the parsed HTML content to the blog data
         blog.content = parsedContent;
-
-        // Send the updated blog data as JSON
         res.json(blog);
     } catch (error) {
         console.error('Error fetching blog:', error);
@@ -64,21 +54,38 @@ app.get("/fullblogpost/:documentId", async (req, res) => {
     }
 });
 
-// Function to parse rich text into HTML
 function parseRichTextToHTML(content) {
     return content.map(block => {
         if (block.type === 'paragraph') {
-            // Convert paragraph children (the array of text) into a <p> tag
-            const text = block.children.map(child => child.text).join(''); // Combine all the text children
+            const text = block.children.map(child => child.text).join('');
             return `<p>${text}</p>`;
         }
-        // Add more block types (like headers, lists, etc.) as needed
         return '';
     }).join('');
 }
 
-
-
+// 404 Not Found Handler
+app.use((req, res) => {
+    res.status(404).send(`
+        <html>
+            <head>
+                <title>404 Not Found</title>
+                <style>
+                    body { font-family: Arial, sans-serif; text-align: center; margin: 100px; background-color: #f0f0f0; }
+                    h1 { font-size: 50px; color: #333; }
+                    p { font-size: 20px; color: #666; }
+                    a { color: #007BFF; text-decoration: none; font-size: 18px; }
+                    a:hover { text-decoration: underline; }
+                </style>
+            </head>
+            <body>
+                <h1>404</h1>
+                <p>Oops! The page you are looking for does not exist.</p>
+                <a href="/">Return to Home</a>
+            </body>
+        </html>
+    `);
+});
 
 // Start the server
 app.listen(PORT, () => {
