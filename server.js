@@ -1,6 +1,8 @@
 const express = require('express');
 const axios = require('axios');
 const path = require('path');
+const cors = require("cors");
+const { sign } = require('crypto');
 require('dotenv').config();
 
 const app = express();
@@ -8,6 +10,8 @@ const PORT = 3000;
 
 // Serve static files (CSS, JS)
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json());
+app.use(cors());
 
 // Route to serve HTML file
 app.get("/", (req, res) => {
@@ -63,6 +67,81 @@ function parseRichTextToHTML(content) {
         return '';
     }).join('');
 }
+
+// authentication route 
+app.get("/authentication", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "auth.html"))
+})
+
+// login route 
+app.post('/login', async (req, res) => {
+    try {
+        const { identifier, password } = req.body;
+
+        // Check if user exists using either email OR username
+        const userRes = await axios.get(`${process.env.STRAPI_URL}/users`, {
+            params: {
+                filters: {
+                    $or: [
+                        { email: { $eq: identifier } },
+                        { username: { $eq: identifier } }
+                    ]
+                }
+            }
+        });
+
+        const users = userRes.data;
+
+        // If no user is found, return an error
+        if (!users.length) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        const user = users[0]; // First matching user
+
+        // Check if the user is confirmed
+        if (!user.confirmed) {
+            return res.status(403).json({ error: "User not confirmed" });
+        }
+
+        // Authenticate the user with Strapi
+        const response = await axios.post(`${process.env.STRAPI_URL}/auth/local`, {
+            identifier,
+            password
+        });
+
+        res.json(response.data);
+    } catch (error) {
+        // Handle invalid credentials
+        if (error.response?.data?.error?.message === "Invalid identifier or password") {
+            return res.status(401).json({ error: "Invalid credentials" });
+        }
+
+        res.status(error.response?.status || 500).json({ error: error.response?.data?.error?.message || "Error" });
+    }
+});
+
+
+
+// signup route 
+app.post('/signup', async (req, res) => {
+    try {
+        const { username, email, password } = req.body;
+
+        const response = await axios.post(`${process.env.STRAPI_URL}/auth/local/register`, {
+            username, email, password
+        });
+
+        res.json(response.data);
+    } catch (error) {
+        // console.error("Signup Error:", error.response?.data?.error?.message || error.message);
+
+        res.status(error.response?.status || 500).json({
+            error: error.response?.data?.error?.message || "Internal Server Error"
+        });
+    }
+});
+
 
 // 404 Not Found Handler
 app.use((req, res) => {
